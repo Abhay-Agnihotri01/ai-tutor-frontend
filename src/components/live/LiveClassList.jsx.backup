@@ -1,0 +1,6 @@
+// BACKUP - Original LiveClassList.jsx
+// Student live class list functionality
+// Restore when ready to implement
+
+import React, { useState, useEffect } from 'react';
+// ... (see original file for complete implementation)

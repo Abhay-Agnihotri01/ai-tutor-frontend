@@ -1,0 +1,7 @@
+// BACKUP - Original LiveClassMonitor.jsx
+// Full admin live class monitoring functionality
+// Restore when ready to implement
+
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+// ... (see original file for complete implementation)
