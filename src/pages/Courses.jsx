@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { API_URL } from '../config/api';
 import { useSearchParams } from 'react-router-dom';
 import { Search, Filter } from 'lucide-react';
@@ -5,7 +6,6 @@ import CourseCard from '../components/course/CourseCard';
 import Button from '../components/common/Button';
 import Pagination from '../components/common/Pagination';
 import { CourseCardSkeleton } from '../components/common/Skeleton';
-import axios from 'axios';
 
 const Courses = () => {
   const [courses, setCourses] = useState([]);
@@ -53,9 +53,10 @@ const Courses = () => {
         ...(searchTerm && { search: searchTerm })
       });
 
-      const response = await axios.get(`${API_URL}/courses?${params}`);
-      setCourses(response.data.courses || []);
-      setPagination(response.data.pagination || { totalPages: 1, totalCourses: 0 });
+      const response = await fetch(`${API_URL}/courses?${params}`);
+      const data = await response.json();
+      setCourses(data.courses || []);
+      setPagination(data.pagination || { totalPages: 1, totalCourses: 0 });
     } catch (error) {
       console.error('Error fetching courses:', error);
     } finally {
