@@ -22,6 +22,29 @@ const InstructorCommunicationPanel = () => {
   });
 
   const [replyMessage, setReplyMessage] = useState('');
+  const messagesEndRef = React.useRef(null);
+  const replyInputRef = React.useRef(null);
+  const unreadDividerRef = React.useRef(null);
+
+  const scrollToBottom = () => {
+    if (unreadDividerRef.current) {
+      unreadDividerRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [replies, selectedCommunication]); // Dependent on replies rendering to find ref
+
+
+  useEffect(() => {
+    if (selectedCommunication && replyInputRef.current) {
+      replyInputRef.current.focus();
+    }
+  }, [selectedCommunication]);
+
 
   const categories = [
     { value: 'general', label: 'General' },
@@ -77,7 +100,7 @@ const InstructorCommunicationPanel = () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [filters, pagination.page, showNewMessage]);
+  }, [filters, pagination.page, showNewMessage, selectedCommunication]);
 
   const fetchCommunications = async () => {
     try {
@@ -152,6 +175,7 @@ const InstructorCommunicationPanel = () => {
 
   const handleViewCommunication = async (communication) => {
     setSelectedCommunication(communication);
+    setReplies([]); // Clear previous replies to prevent leakage/stale data
 
     try {
       const response = await fetch(`${API_URL}/admin-communications/${communication.id}`, {
@@ -160,8 +184,8 @@ const InstructorCommunicationPanel = () => {
       const data = await response.json();
       setReplies(data.communication?.replies || []);
 
-      // Mark as read if unread
-      if (communication.status === 'unread') {
+      // Mark as read if unread or replied (so "New" badge disappears)
+      if (communication.status === 'unread' || communication.status === 'replied') {
         await fetch(`${API_URL}/admin-communications/${communication.id}/status`, {
           method: 'PATCH',
           headers: {
@@ -171,6 +195,7 @@ const InstructorCommunicationPanel = () => {
           body: JSON.stringify({ status: 'read' })
         });
         fetchCommunications();
+        fetchUnreadCount(); // Refresh unread count after marking as read
       }
     } catch (error) {
       console.error('Error fetching communication details:', error);
@@ -217,6 +242,7 @@ const InstructorCommunicationPanel = () => {
         setReplies(prev =>
           prev.map(reply => reply.id === tempReply.id ? realReply : reply)
         );
+        fetchUnreadCount(); // Refresh unread count after sending a reply
       } else {
         setReplies(prev => prev.filter(reply => reply.id !== tempReply.id));
       }
@@ -348,7 +374,39 @@ const InstructorCommunicationPanel = () => {
                             }`}>
                             {comm.priority}
                           </span>
-                          {comm.status === 'unread' && <Clock className="w-3 h-3 text-yellow-600" />}
+                          {/* Badge Logic based on Role */}
+
+                          {/* INSTRUCTOR VIEW */}
+                          {user?.role === 'instructor' && (
+                            <>
+                              {comm.status === 'unread' && (
+                                <span className="bg-gray-100 text-gray-600 border border-gray-200 text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                  Sent
+                                </span>
+                              )}
+                              {comm.status === 'replied' && (
+                                <span className="bg-green-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm animate-pulse">
+                                  NEW REPLY {comm.unreadCount > 0 ? `(${comm.unreadCount})` : ''}
+                                </span>
+                              )}
+                            </>
+                          )}
+
+                          {/* ADMIN VIEW */}
+                          {user?.role === 'admin' && (
+                            <>
+                              {comm.status === 'unread' && (
+                                <span className="bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm animate-pulse">
+                                  NEW
+                                </span>
+                              )}
+                              {comm.status === 'replied' && (
+                                <span className="bg-blue-100 text-blue-700 border border-blue-200 text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                  Replied
+                                </span>
+                              )}
+                            </>
+                          )}
                         </div>
                       </div>
                       <p className={`text-sm mb-1 truncate ${comm.status === 'unread' ? 'font-medium text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'
@@ -422,36 +480,57 @@ const InstructorCommunicationPanel = () => {
                 </div>
 
                 {/* Replies */}
-                {(replies || []).map((reply) => (
-                  <div key={reply.id} className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white font-medium text-xs">
-                        {reply.isFromAdmin ? 'A' : 'Y'}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {reply.isFromAdmin ? 'Admin' : 'You'}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(reply.createdAt).toLocaleString()}
-                          </p>
+                {(replies || []).map((reply, index) => {
+                  const lastRead = selectedCommunication?.userLastReadAt ? new Date(selectedCommunication.userLastReadAt) : new Date(0);
+                  const replyDate = new Date(reply.createdAt);
+                  const isNew = reply.isFromAdmin && replyDate > lastRead;
+                  const prevReply = index > 0 ? replies[index - 1] : null;
+                  const prevWasNew = prevReply && prevReply.isFromAdmin && new Date(prevReply.createdAt) > lastRead;
+                  const showDivider = isNew && !prevWasNew;
+
+                  return (
+                    <React.Fragment key={reply.id}>
+                      {showDivider && (
+                        <div ref={unreadDividerRef} className="flex justify-center my-4">
+                          <span className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium border border-blue-200 shadow-sm">
+                            Unread Messages
+                          </span>
                         </div>
-                        <div className="prose prose-sm max-w-none">
-                          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                            {reply.message}
-                          </p>
+                      )}
+
+                      <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white font-medium text-xs">
+                            {reply.isFromAdmin ? 'A' : 'Y'}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {reply.isFromAdmin ? 'Admin' : 'You'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(reply.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="prose prose-sm max-w-none">
+                              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                {reply.message}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    </React.Fragment>
+                  );
+                })}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Reply Form */}
               <div className="bg-white dark:bg-gray-800 border-t dark:border-gray-700 p-6">
                 <form onSubmit={handleReply} className="space-y-3">
                   <textarea
+                    ref={replyInputRef}
                     value={replyMessage}
                     onChange={(e) => setReplyMessage(e.target.value)}
                     onKeyDown={(e) => {
@@ -497,94 +576,96 @@ const InstructorCommunicationPanel = () => {
       </div>
 
       {/* New Message Modal */}
-      {showNewMessage && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Contact Admin</h2>
-              <button
-                onClick={() => setShowNewMessage(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                ×
-              </button>
-            </div>
-            <form onSubmit={handleSendMessage} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Subject</label>
-                <input
-                  type="text"
-                  value={newMessage.subject}
-                  onChange={(e) => setNewMessage(prev => ({ ...prev, subject: e.target.value }))}
-                  className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter subject..."
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Category</label>
-                  <select
-                    value={newMessage.category}
-                    onChange={(e) => setNewMessage(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {categories.map(category => (
-                      <option key={category.value} value={category.value}>{category.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Priority</label>
-                  <select
-                    value={newMessage.priority}
-                    onChange={(e) => setNewMessage(prev => ({ ...prev, priority: e.target.value }))}
-                    className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {priorities.map(priority => (
-                      <option key={priority.value} value={priority.value}>{priority.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Message</label>
-                <textarea
-                  value={newMessage.message}
-                  onChange={(e) => setNewMessage(prev => ({ ...prev, message: e.target.value }))}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.ctrlKey) {
-                      e.preventDefault();
-                      handleSendMessage(e);
-                    }
-                  }}
-                  className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  rows="6"
-                  placeholder="Type your message... (Press Ctrl+Enter to send)"
-                  required
-                />
-              </div>
-              <div className="flex items-center justify-end gap-3 pt-4">
+      {
+        showNewMessage && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Contact Admin</h2>
                 <button
-                  type="button"
                   onClick={() => setShowNewMessage(false)}
-                  className="px-6 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                >
-                  <Send className="w-4 h-4" />
-                  Send Message
+                  ×
                 </button>
               </div>
-            </form>
+              <form onSubmit={handleSendMessage} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Subject</label>
+                  <input
+                    type="text"
+                    value={newMessage.subject}
+                    onChange={(e) => setNewMessage(prev => ({ ...prev, subject: e.target.value }))}
+                    className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter subject..."
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Category</label>
+                    <select
+                      value={newMessage.category}
+                      onChange={(e) => setNewMessage(prev => ({ ...prev, category: e.target.value }))}
+                      className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {categories.map(category => (
+                        <option key={category.value} value={category.value}>{category.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Priority</label>
+                    <select
+                      value={newMessage.priority}
+                      onChange={(e) => setNewMessage(prev => ({ ...prev, priority: e.target.value }))}
+                      className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {priorities.map(priority => (
+                        <option key={priority.value} value={priority.value}>{priority.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Message</label>
+                  <textarea
+                    value={newMessage.message}
+                    onChange={(e) => setNewMessage(prev => ({ ...prev, message: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.ctrlKey) {
+                        e.preventDefault();
+                        handleSendMessage(e);
+                      }
+                    }}
+                    className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    rows="6"
+                    placeholder="Type your message... (Press Ctrl+Enter to send)"
+                    required
+                  />
+                </div>
+                <div className="flex items-center justify-end gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewMessage(false)}
+                    className="px-6 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  >
+                    <Send className="w-4 h-4" />
+                    Send Message
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 

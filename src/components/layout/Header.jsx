@@ -7,7 +7,7 @@ import { useCart } from '../../hooks/useCart';
 import { useWishlist } from '../../hooks/useWishlist';
 import Button from '../common/Button';
 import ReportIssue from '../student/ReportIssue';
-import MyIssues from '../student/MyIssues';
+
 import { BASE_URL } from '../../config/api';
 
 const Header = () => {
@@ -16,8 +16,9 @@ const Header = () => {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isReportIssueOpen, setIsReportIssueOpen] = useState(false);
-  const [isMyIssuesOpen, setIsMyIssuesOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
   const { isDark, toggleTheme } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
   const { cartCount } = useCart();
@@ -28,6 +29,30 @@ const Header = () => {
   const categoriesRef = useRef(null);
   const notificationsRef = useRef(null);
   const searchRef = useRef(null);
+
+  useEffect(() => {
+    if (isAuthenticated && (user?.role === 'admin' || user?.role === 'instructor')) {
+      const fetchUnreadCount = async () => {
+        try {
+          const response = await fetch(`${BASE_URL}/admin-communications/unread-count`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setUnreadCount(data.count);
+          }
+        } catch (error) {
+          console.error('Failed to fetch unread count', error);
+        }
+      };
+
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 30000); // Poll every 30s
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, user?.role]);
 
   const categories = [
     { name: 'Development', icon: Code, subcategories: ['Web Development', 'Mobile Development', 'Programming Languages', 'Game Development', 'Database Design', 'Software Testing'] },
@@ -331,7 +356,14 @@ const Header = () => {
                             className="flex items-center space-x-3 w-full p-3 text-left hover:theme-bg-secondary rounded-lg theme-text-primary transition-colors"
                             onClick={() => setIsProfileOpen(false)}
                           >
-                            <MessageSquare className="w-5 h-5" />
+                            <div className="relative">
+                              <MessageSquare className="w-5 h-5" />
+                              {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold ring-1 ring-white dark:ring-gray-800">
+                                  {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                              )}
+                            </div>
                             <span>Communications</span>
                           </Link>
                         </>
@@ -366,7 +398,14 @@ const Header = () => {
                             className="flex items-center space-x-3 w-full p-3 text-left hover:theme-bg-secondary rounded-lg theme-text-primary transition-colors"
                             onClick={() => setIsProfileOpen(false)}
                           >
-                            <MessageSquare className="w-5 h-5" />
+                            <div className="relative">
+                              <MessageSquare className="w-5 h-5" />
+                              {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold ring-1 ring-white dark:ring-gray-800">
+                                  {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                              )}
+                            </div>
                             <span>Contact Admin</span>
                           </Link>
                         </>
@@ -412,16 +451,14 @@ const Header = () => {
                             <BarChart3 className="w-5 h-5" />
                             <span>Track Progress</span>
                           </Link>
-                          <button
-                            onClick={() => {
-                              setIsMyIssuesOpen(true);
-                              setIsProfileOpen(false);
-                            }}
+                          <Link
+                            to="/student/issues"
                             className="flex items-center space-x-3 w-full p-3 text-left hover:theme-bg-secondary rounded-lg theme-text-primary transition-colors"
+                            onClick={() => setIsProfileOpen(false)}
                           >
                             <MessageSquare className="w-5 h-5" />
                             <span>My Issues</span>
-                          </button>
+                          </Link>
                           <button
                             onClick={() => {
                               setIsReportIssueOpen(true);
@@ -590,10 +627,7 @@ const Header = () => {
         isOpen={isReportIssueOpen}
         onClose={() => setIsReportIssueOpen(false)}
       />
-      <MyIssues
-        isOpen={isMyIssuesOpen}
-        onClose={() => setIsMyIssuesOpen(false)}
-      />
+
     </header>
   );
 };

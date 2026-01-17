@@ -24,6 +24,28 @@ const CommunicationPanel = () => {
   });
 
   const [replyMessage, setReplyMessage] = useState('');
+  const messagesEndRef = React.useRef(null);
+  const replyInputRef = React.useRef(null);
+  const unreadDividerRef = React.useRef(null);
+
+  const scrollToBottom = () => {
+    if (unreadDividerRef.current) {
+      unreadDividerRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [replies, selectedCommunication]);
+
+  useEffect(() => {
+    if (selectedCommunication && replyInputRef.current) {
+      replyInputRef.current.focus();
+    }
+  }, [selectedCommunication]);
+
 
   const categories = [
     { value: 'general', label: 'General' },
@@ -386,6 +408,11 @@ const CommunicationPanel = () => {
                         <p className={`text-sm font-medium truncate ${comm.status === 'unread' ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
                           }`}>
                           {comm.isFromAdmin ? 'Admin' : (comm.sender?.name || 'Unknown')}
+                          {comm.unreadCount > 0 && (
+                            <span className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                              {comm.unreadCount}
+                            </span>
+                          )}
                         </p>
                         <div className="flex items-center gap-1">
                           <span className={`text-xs px-1.5 py-0.5 rounded ${comm.priority === 'urgent' ? 'bg-red-100 text-red-700' :
@@ -478,36 +505,58 @@ const CommunicationPanel = () => {
                 </div>
 
                 {/* Replies */}
-                {(replies || []).map((reply) => (
-                  <div key={reply.id} className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white font-medium text-xs">
-                        {reply.isFromAdmin ? 'A' : 'U'}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {reply.isFromAdmin ? 'Admin' : 'You'}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(reply.createdAt).toLocaleString()}
-                          </p>
+                {(replies || []).map((reply, index) => {
+                  const lastRead = selectedCommunication?.adminLastReadAt ? new Date(selectedCommunication.adminLastReadAt) : new Date(0);
+                  const replyDate = new Date(reply.createdAt);
+
+                  // For Admin, new messages are those NOT from admin (i.e. from User)
+                  const isNew = !reply.isFromAdmin && replyDate > lastRead;
+                  const prevReply = index > 0 ? replies[index - 1] : null;
+                  const prevWasNew = prevReply && !prevReply.isFromAdmin && new Date(prevReply.createdAt) > lastRead;
+                  const showDivider = isNew && !prevWasNew;
+
+                  return (
+                    <React.Fragment key={reply.id}>
+                      {showDivider && (
+                        <div ref={unreadDividerRef} className="flex justify-center my-4">
+                          <span className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium border border-blue-200 shadow-sm">
+                            Unread Messages
+                          </span>
                         </div>
-                        <div className="prose prose-sm max-w-none">
-                          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                            {reply.message}
-                          </p>
+                      )}
+                      <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700 p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white font-medium text-xs">
+                            {reply.isFromAdmin ? 'A' : 'U'}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {reply.isFromAdmin ? 'Admin' : 'You'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(reply.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="prose prose-sm max-w-none">
+                              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                {reply.message}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    </React.Fragment>
+                  );
+                })}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Reply Form */}
               <div className="bg-white dark:bg-gray-800 border-t dark:border-gray-700 p-6">
                 <form onSubmit={handleReply} className="space-y-3">
                   <textarea
+                    ref={replyInputRef}
                     value={replyMessage}
                     onChange={(e) => setReplyMessage(e.target.value)}
                     onKeyDown={(e) => {

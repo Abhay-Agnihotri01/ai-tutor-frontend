@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { API_URL, BASE_URL } from '../config/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Trash2, Heart, ArrowLeft, CreditCard, Tag, Clock } from 'lucide-react';

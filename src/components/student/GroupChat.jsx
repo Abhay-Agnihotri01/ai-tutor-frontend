@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Send, Users, MessageSquare, Search, MoreVertical, Hash } from 'lucide-react';
+import { io } from 'socket.io-client';
 import { useAuth } from '../../context/AuthContext';
 import { API_URL, BASE_URL } from '../../config/api';
 import axios from 'axios';
 
 const GroupChat = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [activeRoom, setActiveRoom] = useState('general');
+  const [activeRoom, setActiveRoom] = useState(null);
   const [chatRooms, setChatRooms] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
+  const socketRef = useRef(null);
 
   // Default rooms as fallback
   const defaultRooms = [
@@ -23,18 +27,107 @@ const GroupChat = () => {
 
   useEffect(() => {
     fetchChatRooms();
-    fetchOnlineUsers();
+
+    // Initialize socket connection
+    socketRef.current = io(BASE_URL);
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
 
   useEffect(() => {
-    if (activeRoom) {
+    if (activeRoom && user) {
+      // Update URL when activeRoom changes
+      setSearchParams({ room: activeRoom });
       fetchMessages();
+
+      // Mark room as read
+      markRoomAsRead(activeRoom);
+
+      // Join room via socket
+      if (socketRef.current) {
+        socketRef.current.emit('join-room', {
+          roomId: activeRoom,
+          userId: user.id,
+          userType: user.role,
+          userName: `${user.firstName} ${user.lastName}`
+        });
+
+        // Remove previous listeners to avoid duplicates
+        socketRef.current.off('chat-message');
+        socketRef.current.off('existing-participants');
+
+        // Listen for new messages
+        socketRef.current.on('chat-message', (message) => {
+          // Ignore own messages to prevent duplication with optimistic updates
+          // (Only if it's the active room, otherwise we might want to know? 
+          //  Actually user sends to active room, so we already know it's read/handled)
+          if (message.userId === user.id) return;
+
+          if (message.roomId === activeRoom) {
+            setMessages((prevMessages) => {
+              // Avoid duplicates
+              if (prevMessages.some(m => m.id === message.id)) {
+                return prevMessages;
+              }
+              return [...prevMessages, message];
+            });
+            scrollToBottom();
+          } else {
+            // Message is for another room, increment unread count
+            setChatRooms(prev => prev.map(room =>
+              room.id === message.roomId
+                ? { ...room, unreadCount: (room.unreadCount || 0) + 1 }
+                : room
+            ));
+          }
+        });
+
+        // Listen for global online users updates
+        socketRef.current.on('online-users-update', (users) => {
+          const formattedUsers = users.map(u => ({
+            id: u.userId,
+            name: u.userName,
+            status: 'online',
+            avatar: null // Avatar currently missing from socket data
+          }));
+
+          // Ensure current user is in the list (though server should include them)
+          // and deduplicate just in case
+          const uniqueUsers = Array.from(new Map(formattedUsers.map(u => [u.id, u])).values());
+
+          setOnlineUsers(uniqueUsers);
+        });
+      }
     }
-  }, [activeRoom]);
+  }, [activeRoom, user]);
+
+  // Sync activeRoom with URL param when it changes externally (e.g. back button)
+  useEffect(() => {
+    const roomParam = searchParams.get('room');
+    if (roomParam && roomParam !== activeRoom && chatRooms.some(r => r.id === roomParam)) {
+      setActiveRoom(roomParam);
+    }
+  }, [searchParams, chatRooms]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const markRoomAsRead = async (roomId) => {
+    try {
+      await axios.post(`${API_URL}/group-chat/rooms/${roomId}/read`);
+      // Update local state to clear unread count
+      setChatRooms(prev => prev.map(room =>
+        room.id === roomId ? { ...room, unreadCount: 0 } : room
+      ));
+    } catch (error) {
+      console.error('Error marking room as read:', error);
+    }
+  };
 
   const fetchChatRooms = async () => {
     try {
@@ -46,9 +139,21 @@ const GroupChat = () => {
             room.name.toLowerCase().includes('study') ? Users : MessageSquare
         }));
         setChatRooms(roomsWithIcons);
-        if (!activeRoom && roomsWithIcons.length > 0) {
-          setActiveRoom(roomsWithIcons[0].id);
+
+        // precise logic: 
+        // 1. try to get room from URL
+        // 2. if not found in URL or URL room not in list, use first room
+        // 3. do NOT default if we already have an active room (unless it's invalid)
+
+        const roomParam = searchParams.get('room');
+        const initialRoomId = roomParam && roomsWithIcons.some(r => r.id === roomParam)
+          ? roomParam
+          : roomsWithIcons[0].id;
+
+        if (!activeRoom) {
+          setActiveRoom(initialRoomId);
         }
+
       } else {
         // Use default rooms if API fails or returns empty
         setChatRooms(defaultRooms);
@@ -176,13 +281,20 @@ const GroupChat = () => {
                     key={room.id}
                     onClick={() => setActiveRoom(room.id)}
                     className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ${isActive
-                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                       }`}
                   >
                     <RoomIcon className="w-5 h-5" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{room.name}</p>
+                      <div className="flex justify-between items-center">
+                        <p className="font-medium truncate">{room.name}</p>
+                        {room.unreadCount > 0 && (
+                          <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+                            {room.unreadCount > 99 ? '99+' : room.unreadCount}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {room.description}
                       </p>

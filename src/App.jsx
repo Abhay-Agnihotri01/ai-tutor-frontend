@@ -46,6 +46,7 @@ import LiveClassMonitor from './pages/admin/LiveClassMonitor';
 import CommunicationPanel from './components/admin/CommunicationPanel';
 import InstructorCommunicationPanel from './components/instructor/CommunicationPanel';
 import GroupChat from './components/student/GroupChat';
+import IssuesPage from './pages/student/IssuesPage';
 import ProgressDashboard from './components/student/ProgressDashboard';
 import PublicProfile from './pages/PublicProfile';
 
@@ -150,6 +151,7 @@ const AppContent = () => {
             {/* <Route path="/instructor/live-class/:meetingId" element={<LiveClassRoom />} /> */}
             {/* <Route path="/student/live-class/:meetingId" element={<LiveClassRoom />} /> */}
             <Route path="/student/group-chat" element={<GroupChat />} />
+            <Route path="/student/issues" element={<IssuesPage />} />
             <Route path="/student/progress/:courseId" element={<ProgressDashboard />} />
             {/* <Route path="/live-class/:meetingId" element={<LiveClassRoom />} /> */}
             {/* <Route path="/live-class/thank-you" element={<LiveClassThankYou />} /> */}
