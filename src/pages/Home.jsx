@@ -34,7 +34,7 @@ const Home = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="theme-hero text-white py-20 animate-fade-in">
+      <section className="theme-hero text-white py-12 md:py-20 animate-fade-in">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-slide-up">
@@ -63,7 +63,7 @@ const Home = () => {
       <CategoriesSection />
 
       {/* Stats Section */}
-      <section className="py-16 theme-bg-primary">
+      <section className="py-10 md:py-16 theme-bg-primary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div className="flex flex-col items-center animate-scale-in" style={{ animationDelay: '0.1s' }}>
@@ -92,7 +92,7 @@ const Home = () => {
       </section>
 
       {/* Featured Courses */}
-      <section className="py-16">
+      <section className="py-10 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold theme-text-primary mb-4">
@@ -126,7 +126,7 @@ const Home = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 theme-bg-tertiary">
+      <section className="py-10 md:py-16 theme-bg-tertiary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 theme-text-primary">
             Ready to Start Learning?

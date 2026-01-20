@@ -121,10 +121,10 @@ const InstructorDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="min-h-screen py-6 md:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 md:mb-8">
           <div>
             <h1 className="text-3xl font-bold theme-text-primary mb-2">
               Instructor Dashboard

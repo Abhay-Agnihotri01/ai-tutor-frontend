@@ -69,7 +69,7 @@ const CategoriesSection = () => {
   };
 
   return (
-    <section className="py-16 theme-bg-secondary animate-slide-up">
+    <section className="py-10 md:py-16 theme-bg-secondary animate-slide-up">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold theme-text-primary mb-4">
@@ -85,7 +85,7 @@ const CategoriesSection = () => {
             <div
               key={category}
               className="relative group animate-scale-in"
-              style={{animationDelay: `${index * 0.1}s`}}
+              style={{ animationDelay: `${index * 0.1}s` }}
               onMouseEnter={() => setHoveredCategory(category)}
               onMouseLeave={() => setHoveredCategory(null)}
             >
@@ -115,9 +115,8 @@ const CategoriesSection = () => {
                         <Link
                           key={subcategory.name}
                           to={`/courses?category=${encodeURIComponent(subcategory.name)}`}
-                          className={`p-2 rounded hover:theme-bg-secondary transition-colors group/item ${
-                            subcategory.subItems ? 'flex items-center justify-between' : 'block'
-                          }`}
+                          className={`p-2 rounded hover:theme-bg-secondary transition-colors group/item ${subcategory.subItems ? 'flex items-center justify-between' : 'block'
+                            }`}
                         >
                           <span className="text-sm theme-text-secondary group-hover/item:theme-text-primary">
                             {subcategory.name}

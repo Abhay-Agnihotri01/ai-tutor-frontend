@@ -958,25 +958,25 @@ const CourseBuilder = () => {
 
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+          <div className="flex items-center w-full sm:w-auto">
             <button
               onClick={() => navigate('/instructor/dashboard')}
-              className="mr-4 p-2 hover:theme-bg-secondary rounded-lg transition-colors"
+              className="mr-4 p-2 hover:theme-bg-secondary rounded-lg transition-colors flex-shrink-0"
             >
               <ArrowLeft className="w-5 h-5 theme-text-primary" />
             </button>
-            <div>
-              <h1 className="text-3xl font-bold theme-text-primary">{course?.title}</h1>
-              <p className="theme-text-secondary">Build your course content</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold theme-text-primary truncate">{course?.title}</h1>
+              <p className="theme-text-secondary text-sm sm:text-base">Build your course content</p>
             </div>
           </div>
 
-          <div className="flex space-x-3">
-            <Button variant="outline" onClick={handlePreviewCourse}>Preview Course</Button>
-            <Button variant="outline" onClick={() => fetchCourseData()}>Sync Changes</Button>
-            <Button onClick={handlePublishCourse}>
-              {course?.isPublished ? 'Unpublish Course' : 'Publish Course'}
+          <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={handlePreviewCourse}>Preview</Button>
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => fetchCourseData()}>Sync</Button>
+            <Button size="sm" className="flex-1 sm:flex-none" onClick={handlePublishCourse}>
+              {course?.isPublished ? 'Unpublish' : 'Publish'}
             </Button>
           </div>
         </div>
@@ -1218,7 +1218,7 @@ const CourseBuilder = () => {
                                     <span className="text-green-600 text-xs font-bold">📄</span>
                                   </div>
                                   <div className="flex-1">
-                                    <p className="theme-text-primary font-medium">{item.title}</p>
+                                    <p className="theme-text-primary font-medium truncate">{item.title}</p>
                                     <p className="text-xs theme-text-muted">
                                       {item.fileName} • {(item.fileSize / 1024 / 1024).toFixed(1)}MB
                                     </p>
@@ -1270,7 +1270,7 @@ const CourseBuilder = () => {
                                     <FileText className="w-4 h-4 text-blue-600" />
                                   </div>
                                   <div className="flex-1">
-                                    <p className="theme-text-primary font-medium">{item.title}</p>
+                                    <p className="theme-text-primary font-medium truncate">{item.title}</p>
                                     <p className="text-xs theme-text-muted">
                                       {item.uploadType === 'url' ? 'Web Content' : item.fileName}
                                     </p>

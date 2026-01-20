@@ -117,7 +117,7 @@ const Register = () => {
           </p>
         </div>
 
-        <div className="theme-card py-8 px-6 rounded-lg">
+        <div className="theme-card py-6 px-4 sm:py-8 sm:px-6 rounded-lg">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <Input

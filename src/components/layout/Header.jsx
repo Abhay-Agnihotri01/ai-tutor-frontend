@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { Moon, Sun, Menu, X, User, LogOut, Search, BookOpen, Play, Award, Bell, ShoppingCart, Heart, ChevronDown, Globe, Briefcase, Code, Palette, Camera, Music, Dumbbell, TrendingUp, Shield, Users, MessageSquare, AlertTriangle, BarChart3 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -103,7 +104,7 @@ const Header = () => {
   };
 
   return (
-    <header className="theme-card border-b theme-border animate-slide-in-left sticky top-0 z-40">
+    <header className="theme-card border-b theme-border sticky top-0 z-50 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -179,11 +180,20 @@ const Header = () => {
           {/* Right side */}
           <div className="flex items-center space-x-3">
             {/* Mobile Search */}
-            <form onSubmit={handleSearch} className="lg:hidden">
-              <button type="submit" className="p-2 rounded-lg theme-bg-secondary hover:theme-bg-tertiary transition-colors">
-                <Search className="w-5 h-5" />
-              </button>
-            </form>
+            {/* Mobile Search Button -> Opens Menu with Search focus */}
+            <button
+              onClick={() => {
+                setIsMenuOpen(true);
+                // Attempt to focus the search input after the menu opens
+                setTimeout(() => {
+                  const input = document.getElementById('mobile-search-input');
+                  if (input) input.focus();
+                }, 100);
+              }}
+              className="lg:hidden p-2 rounded-lg theme-bg-secondary hover:theme-bg-tertiary transition-colors"
+            >
+              <Search className="w-5 h-5" />
+            </button>
 
             {/* Notifications (for authenticated users) */}
             {isAuthenticated && (
@@ -267,7 +277,7 @@ const Header = () => {
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="flex items-center space-x-2 p-2 rounded-lg hover:theme-bg-secondary transition-all duration-200 cursor-pointer"
                 >
-                  <div className="w-8 h-8 theme-logo rounded-full flex items-center justify-center overflow-hidden">
+                  <div className="w-8 h-8 theme-logo rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                     {user?.avatar ? (
                       <img
                         src={user.avatar.startsWith('http') ? user.avatar : `${BASE_URL}${user.avatar}`}
@@ -287,7 +297,7 @@ const Header = () => {
                   <div className="absolute right-0 mt-2 w-64 theme-card rounded-lg shadow-xl theme-border border animate-scale-in z-50">
                     <div className="p-4 border-b theme-border">
                       <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 theme-logo rounded-full flex items-center justify-center overflow-hidden">
+                        <div className="w-12 h-12 theme-logo rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                           {user?.avatar ? (
                             <img
                               src={user.avatar.startsWith('http') ? user.avatar : `${BASE_URL}${user.avatar}`}
@@ -300,9 +310,9 @@ const Header = () => {
                             </span>
                           )}
                         </div>
-                        <div>
-                          <p className="font-medium theme-text-primary">{user?.firstName} {user?.lastName}</p>
-                          <p className="text-sm theme-text-muted">{user?.email}</p>
+                        <div className="overflow-hidden">
+                          <p className="font-medium theme-text-primary truncate">{user?.firstName} {user?.lastName}</p>
+                          <p className="text-sm theme-text-muted truncate">{user?.email}</p>
                           <p className="text-xs text-primary-600 capitalize">{user?.role}</p>
                         </div>
                       </div>
@@ -501,7 +511,7 @@ const Header = () => {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-2 rounded-lg hover:theme-bg-secondary transition-colors"
+              className="lg:hidden p-2 rounded-lg hover:theme-bg-secondary active:theme-bg-tertiary active:scale-95 transition-all duration-200"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -509,117 +519,153 @@ const Header = () => {
         </div>
 
         {/* Mobile menu overlay */}
-        {isMenuOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
-            <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsMenuOpen(false)} />
-            <div ref={menuRef} className="absolute top-16 right-4 w-80 theme-card rounded-lg shadow-xl theme-border border animate-scale-in max-h-[80vh] overflow-y-auto">
-              <div className="p-4">
-                {/* Mobile Search */}
-                <form onSubmit={handleSearch} className="mb-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 theme-text-muted" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search courses..."
-                      className="w-full pl-10 pr-4 py-2 theme-bg-secondary theme-text-primary border theme-border rounded-lg focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                </form>
+        {isMenuOpen && createPortal(
+          <div className="fixed inset-0 z-[100] lg:hidden">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+              onClick={() => setIsMenuOpen(false)}
+            />
 
-                <nav className="space-y-2">
-                  <Link
-                    to="/courses"
-                    className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors"
+            {/* Drawer */}
+            <div
+              ref={menuRef}
+              className="fixed inset-y-0 right-0 w-[280px] xs:w-80 theme-card shadow-2xl theme-border border-l transform transition-all duration-300 ease-in-out animate-slide-in-right"
+            >
+              <div className="flex flex-col h-full">
+                {/* Drawer Header */}
+                <div className="p-4 border-b theme-border flex justify-between items-center">
+                  <span className="font-bold text-lg theme-text-primary">Menu</span>
+                  <button
                     onClick={() => setIsMenuOpen(false)}
+                    className="p-2 rounded-lg hover:theme-bg-secondary transition-colors"
                   >
-                    <BookOpen className="w-5 h-5" />
-                    <span>All Courses</span>
-                  </Link>
+                    <X className="w-5 h-5 theme-text-secondary" />
+                  </button>
+                </div>
 
-                  {isAuthenticated && user?.role === 'student' && (
-                    <>
-                      <Link
-                        to="/my-learning"
-                        className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <Play className="w-5 h-5" />
-                        <span>My Learning</span>
-                      </Link>
-                      <Link
-                        to="/wishlist"
-                        className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <Heart className="w-5 h-5" />
-                        <span>Wishlist</span>
-                      </Link>
-                      <Link
-                        to="/student/group-chat"
-                        className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <Users className="w-5 h-5" />
-                        <span>Group Chat</span>
-                      </Link>
-                    </>
-                  )}
+                <div className="flex-1 overflow-y-auto p-4">
+                  {/* Mobile Search */}
+                  <form onSubmit={handleSearch} className="mb-6">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 theme-text-muted" />
+                      <input
+                        id="mobile-search-input"
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search courses..."
+                        className="w-full pl-10 pr-4 py-2.5 theme-bg-secondary theme-text-primary border theme-border rounded-lg focus:ring-2 focus:ring-primary-500 transition-all font-medium"
+                      />
+                    </div>
+                  </form>
 
-                  {isAuthenticated && user?.role === 'instructor' && (
-                    <>
-                      <Link
-                        to="/instructor/dashboard"
-                        className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <BookOpen className="w-5 h-5" />
-                        <span>Instructor Dashboard</span>
-                      </Link>
-                      <Link
-                        to="/instructor/courses"
-                        className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <Play className="w-5 h-5" />
-                        <span>My Courses</span>
-                      </Link>
-                    </>
-                  )}
+                  <nav className="space-y-2">
+                    <Link
+                      to="/courses"
+                      className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors group"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg group-hover:bg-primary-100 dark:group-hover:bg-primary-900/40 transition-colors">
+                        <BookOpen className="w-5 h-5 text-primary-600" />
+                      </div>
+                      <span className="font-medium">All Courses</span>
+                    </Link>
 
-                  {/* Categories in Mobile */}
-                  <div className="border-t theme-border pt-3 mt-3">
-                    <p className="text-sm font-medium theme-text-muted mb-2 px-3">Categories</p>
-                    <div className="space-y-1 max-h-48 overflow-y-auto">
-                      {categories.slice(0, 8).map((category) => (
+                    {isAuthenticated && user?.role === 'student' && (
+                      <>
                         <Link
-                          key={category.name}
-                          to={`/courses?category=${encodeURIComponent(category.name.toLowerCase())}`}
-                          className="flex items-center space-x-3 py-2 px-3 rounded-lg hover:theme-bg-secondary transition-colors theme-text-secondary hover:text-primary-600"
+                          to="/my-learning"
+                          className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors group"
                           onClick={() => setIsMenuOpen(false)}
                         >
-                          <category.icon className="w-4 h-4" />
-                          <span className="text-sm">{category.name}</span>
+                          <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40 transition-colors">
+                            <Play className="w-5 h-5 text-purple-600" />
+                          </div>
+                          <span className="font-medium">My Learning</span>
                         </Link>
-                      ))}
-                    </div>
-                  </div>
+                        <Link
+                          to="/wishlist"
+                          className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors group"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg group-hover:bg-red-100 dark:group-hover:bg-red-900/40 transition-colors">
+                            <Heart className="w-5 h-5 text-red-600" />
+                          </div>
+                          <span className="font-medium">Wishlist</span>
+                        </Link>
+                        <Link
+                          to="/student/group-chat"
+                          className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors group"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg group-hover:bg-green-100 dark:group-hover:bg-green-900/40 transition-colors">
+                            <Users className="w-5 h-5 text-green-600" />
+                          </div>
+                          <span className="font-medium">Group Chat</span>
+                        </Link>
+                      </>
+                    )}
 
-                  {!isAuthenticated && (
-                    <div className="flex flex-col space-y-2 pt-4 border-t theme-border">
-                      <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                        <Button variant="outline" className="w-full">Log In</Button>
-                      </Link>
-                      <Link to="/register" onClick={() => setIsMenuOpen(false)}>
-                        <Button className="w-full">Sign Up</Button>
-                      </Link>
+                    {isAuthenticated && user?.role === 'instructor' && (
+                      <>
+                        <Link
+                          to="/instructor/dashboard"
+                          className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors group"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
+                            <BookOpen className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <span className="font-medium">Instructor Dashboard</span>
+                        </Link>
+                        <Link
+                          to="/instructor/courses"
+                          className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors group"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg group-hover:bg-orange-100 dark:group-hover:bg-orange-900/40 transition-colors">
+                            <Play className="w-5 h-5 text-orange-600" />
+                          </div>
+                          <span className="font-medium">My Courses</span>
+                        </Link>
+                      </>
+                    )}
+
+                    {/* Categories in Mobile */}
+                    <div className="border-t theme-border pt-4 mt-4">
+                      <p className="text-xs font-semibold uppercase tracking-wider theme-text-muted mb-3 px-3">Categories</p>
+                      <div className="space-y-1">
+                        {categories.slice(0, 8).map((category) => (
+                          <Link
+                            key={category.name}
+                            to={`/courses?category=${encodeURIComponent(category.name.toLowerCase())}`}
+                            className="flex items-center space-x-3 py-2 px-3 rounded-lg hover:theme-bg-secondary transition-colors theme-text-secondary hover:text-primary-600"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <category.icon className="w-4 h-4 opacity-70" />
+                            <span className="text-sm font-medium">{category.name}</span>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
-                  )}
-                </nav>
+
+                    {!isAuthenticated && (
+                      <div className="flex flex-col space-y-3 pt-6 mt-2 border-t theme-border">
+                        <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                          <Button variant="outline" className="w-full justify-center">Log In</Button>
+                        </Link>
+                        <Link to="/register" onClick={() => setIsMenuOpen(false)}>
+                          <Button className="w-full justify-center">Sign Up</Button>
+                        </Link>
+                      </div>
+                    )}
+                  </nav>
+                </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 

@@ -94,7 +94,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
           <div className="theme-card p-6 rounded-lg">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -167,7 +167,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Link to="/admin/enhanced" className="theme-card p-4 rounded-lg hover:shadow-lg transition-shadow">
             <div className="flex items-center">
               <TrendingUp className="w-8 h-8 text-purple-600 mr-3" />
@@ -210,7 +210,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Enhanced Admin Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <Link to="/admin/activities" className="theme-card p-4 rounded-lg hover:shadow-lg transition-shadow">
             <div className="flex items-center">
               <Eye className="w-8 h-8 text-orange-600 mr-3" />

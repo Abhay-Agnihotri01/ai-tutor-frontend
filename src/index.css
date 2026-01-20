@@ -13,7 +13,7 @@
   --card-bg: 255 255 255;
   --logo-bg: 59 130 246;
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  
+
   /* Primary colors */
   --primary-50: 239 246 255;
   --primary-100: 219 234 254;
@@ -46,11 +46,43 @@
   * {
     border-color: rgb(var(--border-color));
   }
-  
+
+  html {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
   body {
     background-color: rgb(var(--bg-primary));
     color: rgb(var(--text-primary));
     transition: background-color 0.3s ease, color 0.3s ease;
+    overflow-x: hidden;
+    /* Prevent horizontal scroll */
+    width: 100%;
+    max-width: 100%;
+    position: relative;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Mobile typography adjustments */
+  @media (max-width: 640px) {
+    h1 {
+      font-size: 1.875rem;
+      /* 30px */
+      line-height: 2.25rem;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      /* 24px */
+      line-height: 2rem;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      /* 20px */
+      line-height: 1.75rem;
+    }
   }
 }
 
@@ -58,40 +90,40 @@
   .theme-bg-primary {
     background-color: rgb(var(--bg-primary));
   }
-  
+
   .theme-bg-secondary {
     background-color: rgb(var(--bg-secondary));
   }
-  
+
   .theme-bg-tertiary {
     background-color: rgb(var(--bg-tertiary));
   }
-  
+
   .theme-text-primary {
     color: rgb(var(--text-primary));
   }
-  
+
   .theme-text-secondary {
     color: rgb(var(--text-secondary));
   }
-  
+
   .theme-text-muted {
     color: rgb(var(--text-muted));
   }
-  
+
   .theme-card {
     background-color: rgb(var(--card-bg));
     box-shadow: var(--shadow);
   }
-  
+
   .theme-hero {
     background: var(--hero-bg);
   }
-  
+
   .theme-border {
     border-color: rgb(var(--border-color));
   }
-  
+
   .theme-logo {
     background-color: rgb(var(--logo-bg));
   }
@@ -99,15 +131,15 @@
   .hover\:theme-bg-secondary:hover {
     background-color: rgb(var(--bg-secondary));
   }
-  
+
   .hover\:theme-bg-tertiary:hover {
     background-color: rgb(var(--bg-tertiary));
   }
-  
+
   .hover\:theme-text-primary:hover {
     color: rgb(var(--text-primary));
   }
-  
+
   .hover\:theme-text-secondary:hover {
     color: rgb(var(--text-secondary));
   }
@@ -116,15 +148,15 @@
   .bg-primary-600 {
     background-color: rgb(var(--primary-600));
   }
-  
+
   .hover\:bg-primary-700:hover {
     background-color: rgb(var(--primary-700));
   }
-  
+
   .focus\:ring-primary-500:focus {
     --tw-ring-color: rgb(var(--primary-500));
   }
-  
+
   .focus\:ring-2:focus {
     --tw-ring-offset-width: 2px;
     --tw-ring-offset-color: rgb(var(--bg-primary));
@@ -138,79 +170,88 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
+
   .line-clamp-3 {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
+
   .animate-fade-in {
     animation: fadeIn 0.6s ease-in-out;
   }
-  
+
   .animate-slide-up {
     animation: slideUp 0.5s ease-out;
   }
-  
+
   .animate-slide-in-left {
     animation: slideInLeft 0.6s ease-out;
   }
-  
+
   .animate-slide-in-right {
     animation: slideInRight 0.6s ease-out;
   }
-  
+
   .animate-scale-in {
     animation: scaleIn 0.4s ease-out;
   }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(20px);
   }
-  to { 
+
+  to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
 @keyframes slideInLeft {
-  from { 
+  from {
     opacity: 0;
     transform: translateX(-30px);
   }
-  to { 
+
+  to {
     opacity: 1;
     transform: translateX(0);
   }
 }
 
 @keyframes slideInRight {
-  from { 
+  from {
     opacity: 0;
     transform: translateX(30px);
   }
-  to { 
+
+  to {
     opacity: 1;
     transform: translateX(0);
   }
 }
 
 @keyframes scaleIn {
-  from { 
+  from {
     opacity: 0;
     transform: scale(0.9);
   }
-  to { 
+
+  to {
     opacity: 1;
     transform: scale(1);
   }

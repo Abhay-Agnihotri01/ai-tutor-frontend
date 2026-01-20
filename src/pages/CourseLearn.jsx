@@ -621,9 +621,9 @@ const CourseLearn = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto flex">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row">
         {/* Main Content - Video Player, Text Lecture, or Recording */}
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-4 md:p-6">
           {currentRecording ? (
             <div className="animate-fade-in">
               {/* Recording Player */}
@@ -916,7 +916,7 @@ const CourseLearn = () => {
         </div>
 
         {/* Sidebar - Course Content Only */}
-        <div className="w-80 theme-bg-primary border-l theme-border">
+        <div className="w-full lg:w-80 theme-bg-primary border-t lg:border-t-0 lg:border-l theme-border">
           {/* Sidebar Header */}
           <div className="p-6 border-b theme-border">
             <div className="flex items-center justify-between mb-2">

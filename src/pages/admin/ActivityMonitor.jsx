@@ -482,7 +482,7 @@ const ActivityMonitor = () => {
             ></div>
 
             <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-              <div className="pointer-events-auto w-screen max-w-md transform transition ease-in-out duration-500 sm:duration-700">
+              <div className="pointer-events-auto w-full max-w-md transform transition ease-in-out duration-500 sm:duration-700">
                 <div className="flex h-full flex-col overflow-y-scroll bg-white dark:bg-gray-900 shadow-xl">
                   {/* Drawer Header */}
                   <div className="px-4 py-6 sm:px-6 border-b theme-border bg-gray-50 dark:bg-gray-800">

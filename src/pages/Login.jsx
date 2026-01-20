@@ -112,7 +112,7 @@ const Login = () => {
           </p>
         </div>
 
-        <div className="theme-card py-8 px-6 rounded-lg animate-scale-in" style={{ animationDelay: '0.2s' }}>
+        <div className="theme-card py-6 px-4 sm:py-8 sm:px-6 rounded-lg animate-scale-in" style={{ animationDelay: '0.2s' }}>
           {errors.submit && (
             <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-300 rounded">
               {errors.submit}
