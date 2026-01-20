@@ -95,6 +95,21 @@ const Header = () => {
     };
   }, [isProfileOpen, isMenuOpen, isCategoriesOpen, isNotificationsOpen]);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden'; // Lock html as well for mobile
+    } else {
+      document.body.style.overflow = 'unset';
+      document.documentElement.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.documentElement.style.overflow = 'unset';
+    };
+  }, [isMenuOpen]);
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -115,10 +130,10 @@ const Header = () => {
             <span className="text-xl font-bold theme-text-primary hidden sm:block">LearnHub</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-6">
+          {/* Desktop Navigation - Search visible on Small Tablet+, Links on Desktop */}
+          <nav className="hidden sm:flex items-center space-x-6 flex-1 max-w-2xl ml-4 lg:ml-8">
             {/* Categories Dropdown */}
-            <div className="relative" ref={categoriesRef}>
+            <div className="relative hidden lg:block" ref={categoriesRef}>
               <button
                 onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
                 className="flex items-center space-x-1 theme-text-secondary hover:text-primary-600 py-2"
@@ -150,7 +165,7 @@ const Header = () => {
             </div>
 
             {/* Search Bar */}
-            <form onSubmit={handleSearch} className="relative flex-1 max-w-md" ref={searchRef}>
+            <form onSubmit={handleSearch} className="relative flex-1 md:max-w-md" ref={searchRef}>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 theme-text-muted" />
                 <input
@@ -165,13 +180,13 @@ const Header = () => {
 
             {/* Quick Links */}
             {isAuthenticated && user?.role === 'instructor' && (
-              <Link to="/instructor/dashboard" className="theme-text-secondary hover:text-primary-600 font-medium">
+              <Link to="/instructor/dashboard" className="theme-text-secondary hover:text-primary-600 font-medium hidden lg:block">
                 Instructor
               </Link>
             )}
 
             {isAuthenticated && user?.role === 'student' && (
-              <Link to="/my-learning" className="theme-text-secondary hover:text-primary-600 font-medium">
+              <Link to="/my-learning" className="theme-text-secondary hover:text-primary-600 font-medium hidden lg:block">
                 My Learning
               </Link>
             )}
@@ -181,23 +196,17 @@ const Header = () => {
           <div className="flex items-center space-x-3">
             {/* Mobile Search */}
             {/* Mobile Search Button -> Opens Menu with Search focus */}
-            <button
-              onClick={() => {
-                setIsMenuOpen(true);
-                // Attempt to focus the search input after the menu opens
-                setTimeout(() => {
-                  const input = document.getElementById('mobile-search-input');
-                  if (input) input.focus();
-                }, 100);
-              }}
-              className="lg:hidden p-2 rounded-lg theme-bg-secondary hover:theme-bg-tertiary transition-colors"
+            {/* Mobile Search Button - Hidden to save space, search is in Menu */}
+            {/* <button
+              onClick={() => { ... }}
+              className="hidden"
             >
               <Search className="w-5 h-5" />
-            </button>
+            </button> */}
 
             {/* Notifications (for authenticated users) */}
             {isAuthenticated && (
-              <div className="relative" ref={notificationsRef}>
+              <div className="relative hidden sm:block" ref={notificationsRef}>
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                   className="p-2 rounded-lg theme-bg-secondary hover:theme-bg-tertiary transition-colors relative"
@@ -237,7 +246,7 @@ const Header = () => {
 
             {/* Wishlist (for students) */}
             {isAuthenticated && user?.role === 'student' && (
-              <Link to="/wishlist" className="p-2 rounded-lg theme-bg-secondary hover:theme-bg-tertiary transition-colors relative">
+              <Link to="/wishlist" className="hidden md:flex p-2 rounded-lg theme-bg-secondary hover:theme-bg-tertiary transition-colors relative">
                 <Heart className="w-5 h-5" />
                 {wishlistCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-medium">
@@ -248,8 +257,9 @@ const Header = () => {
             )}
 
             {/* Cart (for students) */}
+            {/* Cart (for students) */}
             {isAuthenticated && user?.role === 'student' && (
-              <Link to="/cart" className="p-2 rounded-lg theme-bg-secondary hover:theme-bg-tertiary transition-colors relative">
+              <Link to="/cart" className="hidden sm:flex p-2 rounded-lg theme-bg-secondary hover:theme-bg-tertiary transition-colors relative">
                 <ShoppingCart className="w-5 h-5" />
                 {cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-500 rounded-full text-xs flex items-center justify-center text-white font-medium">
@@ -262,7 +272,7 @@ const Header = () => {
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg theme-bg-secondary hover:theme-bg-tertiary transition-all duration-200"
+              className="hidden md:flex p-2 rounded-lg theme-bg-secondary hover:theme-bg-tertiary transition-all duration-200"
             >
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
@@ -270,7 +280,7 @@ const Header = () => {
             {/* Auth buttons */}
             {isAuthenticated ? (
               <div
-                className="relative"
+                className="relative hidden md:block"
                 ref={profileRef}
               >
                 <button
@@ -508,10 +518,9 @@ const Header = () => {
               </div>
             )}
 
-            {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-2 rounded-lg hover:theme-bg-secondary active:theme-bg-tertiary active:scale-95 transition-all duration-200"
+              className="lg:hidden p-2 rounded-lg hover:theme-bg-secondary active:theme-bg-tertiary active:scale-95 transition-all duration-200 flex-shrink-0"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -520,17 +529,16 @@ const Header = () => {
 
         {/* Mobile menu overlay */}
         {isMenuOpen && createPortal(
-          <div className="fixed inset-0 z-[100] lg:hidden">
+          <div className="fixed inset-0 z-[9999] lg:hidden">
             {/* Backdrop */}
             <div
               className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
               onClick={() => setIsMenuOpen(false)}
             />
 
-            {/* Drawer */}
             <div
               ref={menuRef}
-              className="fixed inset-y-0 right-0 w-[280px] xs:w-80 theme-card shadow-2xl theme-border border-l transform transition-all duration-300 ease-in-out animate-slide-in-right"
+              className="fixed inset-y-0 right-0 w-72 max-w-[85vw] theme-card shadow-2xl theme-border border-l transform transition-all duration-300 ease-in-out animate-slide-in-right overscroll-contain"
             >
               <div className="flex flex-col h-full">
                 {/* Drawer Header */}
@@ -545,8 +553,32 @@ const Header = () => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4">
+                  {isAuthenticated && (
+                    <div className="flex items-center space-x-3 mb-6 p-3 theme-bg-secondary rounded-lg md:hidden">
+                      <div className="w-10 h-10 theme-logo rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {user?.avatar ? (
+                          <img
+                            src={user.avatar.startsWith('http') ? user.avatar : `${BASE_URL}${user.avatar}`}
+                            alt="Profile"
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-white text-sm font-medium">
+                            {user?.firstName?.[0]}{user?.lastName?.[0]}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold theme-text-primary truncate">
+                          {user?.firstName} {user?.lastName}
+                        </p>
+                        <p className="text-xs theme-text-muted truncate">{user?.email}</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Mobile Search */}
-                  <form onSubmit={handleSearch} className="mb-6">
+                  <form onSubmit={handleSearch} className="mb-6 sm:hidden">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 theme-text-muted" />
                       <input
@@ -585,8 +617,25 @@ const Header = () => {
                           <span className="font-medium">My Learning</span>
                         </Link>
                         <Link
+                          to="/cart"
+                          className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors group sm:hidden"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg group-hover:bg-primary-100 dark:group-hover:bg-primary-900/40 transition-colors">
+                            <ShoppingCart className="w-5 h-5 text-primary-600" />
+                          </div>
+                          <div className="flex justify-between flex-1 items-center">
+                            <span className="font-medium">Cart</span>
+                            {cartCount > 0 && (
+                              <span className="bg-primary-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                {cartCount}
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+                        <Link
                           to="/wishlist"
-                          className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors group"
+                          className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors group md:hidden"
                           onClick={() => setIsMenuOpen(false)}
                         >
                           <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg group-hover:bg-red-100 dark:group-hover:bg-red-900/40 transition-colors">
@@ -603,6 +652,16 @@ const Header = () => {
                             <Users className="w-5 h-5 text-green-600" />
                           </div>
                           <span className="font-medium">Group Chat</span>
+                        </Link>
+                        <Link
+                          to="/notifications"
+                          className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors group sm:hidden"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <div className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg group-hover:bg-yellow-100 dark:group-hover:bg-yellow-900/40 transition-colors">
+                            <Bell className="w-5 h-5 text-yellow-600" />
+                          </div>
+                          <span className="font-medium">Notifications</span>
                         </Link>
                       </>
                     )}
@@ -658,6 +717,41 @@ const Header = () => {
                         <Link to="/register" onClick={() => setIsMenuOpen(false)}>
                           <Button className="w-full justify-center">Sign Up</Button>
                         </Link>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center py-3 px-3 border-t theme-border mt-4">
+                      <span className="font-medium theme-text-secondary text-sm">Theme</span>
+                      <button
+                        onClick={toggleTheme}
+                        className="p-2 rounded-lg theme-bg-secondary hover:theme-bg-tertiary transition-colors"
+                      >
+                        {isDark ? (
+                          <div className="flex items-center space-x-2">
+                            <Sun className="w-4 h-4" />
+                            <span className="text-xs">Light</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <Moon className="w-4 h-4" />
+                            <span className="text-xs">Dark</span>
+                          </div>
+                        )}
+                      </button>
+                    </div>
+
+                    {isAuthenticated && (
+                      <div className="pt-2 border-t theme-border mt-2">
+                        <button
+                          onClick={() => {
+                            logout();
+                            setIsMenuOpen(false);
+                          }}
+                          className="w-full flex items-center space-x-3 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors text-red-600 hover:text-red-700"
+                        >
+                          <LogOut className="w-5 h-5" />
+                          <span className="font-medium">Sign Out</span>
+                        </button>
                       </div>
                     )}
                   </nav>
