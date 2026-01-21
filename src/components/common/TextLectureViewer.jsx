@@ -90,13 +90,53 @@ const TextLectureViewer = ({ lecture, courseId, onComplete, onProgress }) => {
   const formatContent = (content) => {
     if (!content) return '';
 
-    // Convert markdown-like formatting to HTML
-    return content
+    // 1. YouTube Embeds
+    // Regex matches ONLY specific video patterns:
+    // - youtube.com/watch?v=VIDEO_ID (and optional params)
+    // - youtube.com/embed/VIDEO_ID
+    // - youtu.be/VIDEO_ID
+    // It purposefully EXCLUDES simple 'youtube.com' or 'm.youtube.com' without these patterns.
+    const youtubeRegex = /(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S+)?/g;
+
+    let formatted = content.replace(youtubeRegex, (match, videoId) => {
+      return `<div class="relative w-full pb-[56.25%] h-0 my-4 rounded-lg overflow-hidden bg-gray-100 shadow-sm border border-gray-200 dark:border-gray-700">
+        <iframe 
+          src="https://www.youtube.com/embed/${videoId}" 
+          class="absolute top-0 left-0 w-full h-full"
+          frameBorder="0"
+          title="YouTube video player"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        ></iframe>
+      </div>`;
+    });
+
+    // 2. Generic Links (that are NOT already part of the iframe src we just added)
+    // We use a negative lookbehind or check context, but simpler is to match URLs that are likely user text.
+    // A simple way is to process non-HTML segments, but given our controlled input, we can be smart.
+    // We'll skip this complex regex for now to ensure stability, or use a safe "Linkify" approach later if requested.
+    // For now, let's focus on the user's specific request about rendering "accordingly".
+    // If they paste a link that ISN'T YouTube, it should be clickable.
+
+    // Simple URL to Link replacer (careful not to double-replace YouTube or break HTML)
+    // We will do this via a temporary placeholder strategy or just avoid touching the iframes.
+    // ACTUALLY, simpler approach:
+    // Split by the iframes we just inserted? No, regex replace string is one pass.
+
+    // Let's stick to the styling and basic markdown first, and maybe simple linkification for non-youtube.
+    const urlRegex = /(?<!src=")(https?:\/\/(?!www\.youtube\.com|youtu\.be)[^\s<]+)/g;
+    formatted = formatted.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline break-all">$1</a>');
+
+    // 3. Markdown Formatting
+    const result = formatted
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`(.*?)`/g, '<code class="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm">$1</code>')
+      .replace(/`(.*?)`/g, '<code class="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm font-mono text-pink-500">$1</code>')
       .replace(/\n\n/g, '</p><p class="mb-4">')
       .replace(/\n/g, '<br>');
+
+    console.log('[TextLectureViewer] Formatted Content:', result);
+    return result;
   };
 
   return (
@@ -145,8 +185,8 @@ const TextLectureViewer = ({ lecture, courseId, onComplete, onProgress }) => {
             onClick={markAsComplete}
             disabled={isCompleted}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 ${isCompleted
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
           >
             <CheckCircle className="w-4 h-4" />
@@ -215,8 +255,8 @@ const TextLectureViewer = ({ lecture, courseId, onComplete, onProgress }) => {
                 onClick={markAsComplete}
                 disabled={isCompleted}
                 className={`px-6 py-3 rounded-lg font-medium transition-colors ${isCompleted
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
               >
                 {isCompleted ? '✓ Lecture Completed' : 'Mark as Complete'}

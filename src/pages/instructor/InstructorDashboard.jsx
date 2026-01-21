@@ -8,6 +8,7 @@ import { DashboardSkeleton } from '../../components/common/Skeleton';
 import { API_URL, BASE_URL } from '../../config/api';
 
 
+
 const InstructorDashboard = () => {
   const [courses, setCourses] = useState([]);
   const [stats, setStats] = useState({
@@ -188,7 +189,11 @@ const InstructorDashboard = () => {
             </div>
           </div>
 
-          <div className="theme-card p-6 rounded-lg">
+          <Link
+            to="/instructor/enrollments"
+            className="theme-card p-6 rounded-lg cursor-pointer hover:ring-2 hover:ring-green-500 transition-all block"
+            title="Click to view full enrollment analytics"
+          >
             <div className="flex items-center">
               <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
                 <Users className="w-6 h-6 text-green-600" />
@@ -196,9 +201,10 @@ const InstructorDashboard = () => {
               <div className="ml-4">
                 <p className="text-sm theme-text-muted">Total Students</p>
                 <p className="text-2xl font-bold theme-text-primary">{stats.totalStudents}</p>
+                <p className="text-xs theme-text-muted">Click to view details →</p>
               </div>
             </div>
-          </div>
+          </Link>
 
           <div className="theme-card p-6 rounded-lg">
             <div className="flex items-center">
@@ -351,6 +357,8 @@ const InstructorDashboard = () => {
           )}
         </div>
       </div>
+
+
     </div>
   );
 };

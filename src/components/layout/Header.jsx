@@ -8,8 +8,9 @@ import { useCart } from '../../hooks/useCart';
 import { useWishlist } from '../../hooks/useWishlist';
 import Button from '../common/Button';
 import ReportIssue from '../student/ReportIssue';
+import { useNotifications } from '../../context/NotificationContext';
 
-import { BASE_URL } from '../../config/api';
+import { BASE_URL, API_URL } from '../../config/api';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -24,6 +25,7 @@ const Header = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
+  const { notifications, unreadCount: notifUnreadCount, markAsRead } = useNotifications(); // Rename to avoid conflict with admin unreadCount
   const navigate = useNavigate();
   const profileRef = useRef(null);
   const menuRef = useRef(null);
@@ -35,7 +37,7 @@ const Header = () => {
     if (isAuthenticated && (user?.role === 'admin' || user?.role === 'instructor')) {
       const fetchUnreadCount = async () => {
         try {
-          const response = await fetch(`${BASE_URL}/admin-communications/unread-count`, {
+          const response = await fetch(`${API_URL}/admin-communications/unread-count`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
@@ -212,29 +214,56 @@ const Header = () => {
                   className="p-2 rounded-lg theme-bg-secondary hover:theme-bg-tertiary transition-colors relative"
                 >
                   <Bell className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">3</span>
+                  {notifUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-medium shadow-sm ring-1 ring-white dark:ring-gray-800">
+                      {notifUnreadCount > 9 ? '9+' : notifUnreadCount}
+                    </span>
+                  )}
                 </button>
 
                 {isNotificationsOpen && (
                   <div className="absolute right-0 mt-2 w-80 theme-card rounded-lg shadow-xl theme-border border animate-scale-in z-50">
                     <div className="p-4">
-                      <h3 className="font-semibold theme-text-primary mb-3">Notifications</h3>
-                      <div className="space-y-3 max-h-64 overflow-y-auto">
-                        <div className="p-3 theme-bg-secondary rounded-lg">
-                          <p className="text-sm theme-text-primary">New course available: Advanced React Patterns</p>
-                          <p className="text-xs theme-text-muted mt-1">2 hours ago</p>
-                        </div>
-                        <div className="p-3 theme-bg-secondary rounded-lg">
-                          <p className="text-sm theme-text-primary">Assignment graded in JavaScript Fundamentals</p>
-                          <p className="text-xs theme-text-muted mt-1">1 day ago</p>
-                        </div>
-                        <div className="p-3 theme-bg-secondary rounded-lg">
-                          <p className="text-sm theme-text-primary">Live class starting in 30 minutes</p>
-                          <p className="text-xs theme-text-muted mt-1">2 days ago</p>
-                        </div>
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-semibold theme-text-primary">Notifications</h3>
+                        {notifUnreadCount > 0 && (
+                          <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-600 px-2 py-0.5 rounded-full">
+                            {notifUnreadCount} new
+                          </span>
+                        )}
                       </div>
-                      <div className="mt-3 pt-3 border-t theme-border">
-                        <Link to="/notifications" className="text-sm text-primary-600 hover:text-primary-700">
+                      <div className="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
+                        {notifications.length === 0 ? (
+                          <p className="text-sm theme-text-secondary text-center py-4">No notifications</p>
+                        ) : (
+                          notifications.slice(0, 5).map((item) => (
+                            <div
+                              key={item.id}
+                              className={`p-3 rounded-lg transition-colors cursor-pointer ${!item.isRead
+                                ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                                : 'theme-bg-secondary hover:theme-bg-tertiary'
+                                }`}
+                              onClick={() => {
+                                if (!item.isRead) markAsRead(item.notification.id);
+                                // Optional link navigation if needed
+                              }}
+                            >
+                              <p className={`text-sm theme-text-primary ${!item.isRead ? 'font-medium' : ''}`}>
+                                {item.notification.subject}
+                              </p>
+                              <p className="text-xs theme-text-muted mt-1">
+                                {new Date(item.notification.sentAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <div className="mt-3 pt-3 border-t theme-border flex justify-between items-center">
+                        <Link
+                          to="/notifications"
+                          className="text-sm text-primary-600 hover:text-primary-700 font-medium w-full text-center"
+                          onClick={() => setIsNotificationsOpen(false)}
+                        >
                           View all notifications
                         </Link>
                       </div>
@@ -658,10 +687,22 @@ const Header = () => {
                           className="flex items-center space-x-3 theme-text-secondary hover:text-primary-600 py-3 px-3 rounded-lg hover:theme-bg-secondary transition-colors group sm:hidden"
                           onClick={() => setIsMenuOpen(false)}
                         >
-                          <div className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg group-hover:bg-yellow-100 dark:group-hover:bg-yellow-900/40 transition-colors">
+                          <div className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg group-hover:bg-yellow-100 dark:group-hover:bg-yellow-900/40 transition-colors relative">
                             <Bell className="w-5 h-5 text-yellow-600" />
+                            {notifUnreadCount > 0 && (
+                              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-[8px] flex items-center justify-center text-white font-bold ring-1 ring-white dark:ring-gray-800">
+                                {notifUnreadCount > 9 ? '9+' : notifUnreadCount}
+                              </span>
+                            )}
                           </div>
-                          <span className="font-medium">Notifications</span>
+                          <div className="flex justify-between flex-1 items-center">
+                            <span className="font-medium">Notifications</span>
+                            {notifUnreadCount > 0 && (
+                              <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                {notifUnreadCount} new
+                              </span>
+                            )}
+                          </div>
                         </Link>
                       </>
                     )}

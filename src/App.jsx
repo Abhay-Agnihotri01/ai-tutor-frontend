@@ -27,6 +27,7 @@ import EditCourse from './pages/instructor/EditCourse';
 import CourseBuilder from './pages/instructor/CourseBuilder';
 import InstructorCourses from './pages/instructor/InstructorCourses';
 import RevenueAnalytics from './pages/instructor/RevenueAnalytics';
+import EnrollmentAnalytics from './pages/instructor/EnrollmentAnalytics';
 import AssignmentSubmissions from './pages/instructor/AssignmentSubmissions';
 import CourseReviews from './pages/instructor/CourseReviews';
 import CreateTextLecture from './components/instructor/CreateTextLecture';
@@ -49,6 +50,8 @@ import GroupChat from './components/student/GroupChat';
 import IssuesPage from './pages/student/IssuesPage';
 import ProgressDashboard from './components/student/ProgressDashboard';
 import PublicProfile from './pages/PublicProfile';
+import Notifications from './pages/Notifications';
+import { NotificationProvider } from './context/NotificationContext';
 
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
@@ -139,6 +142,7 @@ const AppContent = () => {
             <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
             <Route path="/instructor/courses" element={<InstructorCourses />} />
             <Route path="/instructor/analytics" element={<RevenueAnalytics />} />
+            <Route path="/instructor/enrollments" element={<EnrollmentAnalytics />} />
             <Route path="/instructor/course/create" element={<CreateCourse />} />
             <Route path="/instructor/course/:id/edit" element={<EditCourse />} />
             <Route path="/instructor/course/:id/builder" element={<CourseBuilder />} />
@@ -159,6 +163,7 @@ const AppContent = () => {
             <Route path="/certificates" element={<Certificates />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/notifications" element={<Notifications />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -221,7 +226,9 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <CurrencyProvider>
-            <AppContent />
+            <NotificationProvider>
+              <AppContent />
+            </NotificationProvider>
           </CurrencyProvider>
         </AuthProvider>
       </ThemeProvider>

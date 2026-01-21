@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { Skeleton, ChartSkeleton } from '../../components/common/Skeleton';
 import { API_URL } from '../../config/api';
 
+
 const RevenueAnalytics = () => {
   const [analytics, setAnalytics] = useState({
     totalRevenue: 0,
@@ -139,17 +140,22 @@ const RevenueAnalytics = () => {
             </div>
           </div>
 
-          <div className="theme-card p-6 rounded-lg">
+          <Link
+            to="/instructor/enrollments"
+            className="theme-card p-6 rounded-lg cursor-pointer hover:ring-2 hover:ring-purple-500 transition-all block"
+            title="Click to view full enrollment analytics"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm theme-text-muted">Total Enrollments</p>
                 <p className="text-2xl font-bold theme-text-primary">{analytics.totalEnrollments}</p>
+                <p className="text-xs theme-text-muted mt-1">Click to view details →</p>
               </div>
               <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
                 <Users className="w-6 h-6 text-purple-600" />
               </div>
             </div>
-          </div>
+          </Link>
 
           <div className="theme-card p-6 rounded-lg">
             <div className="flex items-center justify-between">
@@ -319,6 +325,8 @@ const RevenueAnalytics = () => {
           )}
         </div>
       </div>
+
+
     </div>
   );
 };

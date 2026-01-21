@@ -98,9 +98,9 @@ const MyLearning = () => {
       if (filterBy === 'completed') {
         filtered = filtered.filter(e => e.progress === 100);
       } else if (filterBy === 'in-progress') {
-        filtered = filtered.filter(e => e.progress > 0 && e.progress < 100);
+        filtered = filtered.filter(e => (e.progress > 0 || e.hasStarted) && e.progress < 100);
       } else if (filterBy === 'not-started') {
-        filtered = filtered.filter(e => e.progress === 0);
+        filtered = filtered.filter(e => e.progress === 0 && !e.hasStarted);
       } else {
         filtered = filtered.filter(e => e.Course?.category === filterBy);
       }
@@ -393,7 +393,7 @@ const MyLearning = () => {
                   <div>
                     <p className="text-sm theme-text-muted">In Progress</p>
                     <p className="text-xl font-bold theme-text-primary">
-                      {enrolledCourses.filter(e => e.progress > 0 && e.progress < 100).length}
+                      {enrolledCourses.filter(e => (e.progress > 0 || e.hasStarted) && e.progress < 100).length}
                     </p>
                   </div>
                 </div>
@@ -407,7 +407,7 @@ const MyLearning = () => {
                   <div>
                     <p className="text-sm theme-text-muted">Total Hours</p>
                     <p className="text-xl font-bold theme-text-primary">
-                      {enrolledCourses.reduce((total, e) => total + (e.Course?.actualDuration || e.Course?.duration || 0), 0)}h
+                      {enrolledCourses.reduce((total, e) => total + (e.Course?.actualDuration || e.Course?.duration || 0), 0).toFixed(1)}h
                     </p>
                   </div>
                 </div>
@@ -448,10 +448,12 @@ const MyLearning = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedCourses.map((enrollment) => {
                 const course = enrollment.Course;
-                const progressPercent = enrollment.progress || 0;
+                let progressPercent = enrollment.progress || 0;
+                // If started but progress is 0, show 1% to make it feel less static
+                if (progressPercent === 0 && enrollment.hasStarted) {
+                  progressPercent = 1;
+                }
                 const isCompleted = progressPercent === 100;
-
-
 
                 return (
                   <div key={enrollment.id} className="theme-card rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-105">

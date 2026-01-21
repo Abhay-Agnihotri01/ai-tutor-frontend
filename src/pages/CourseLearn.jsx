@@ -28,6 +28,7 @@ const CourseLearn = () => {
   const [currentTextLecture, setCurrentTextLecture] = useState(null);
   const [currentRecording, setCurrentRecording] = useState(null);
   const [completedLessons, setCompletedLessons] = useState(new Set());
+  const [progressLoaded, setProgressLoaded] = useState(false);
   const [expandedChapters, setExpandedChapters] = useState(new Set(['1']));
   // const [expandedLiveClasses, setExpandedLiveClasses] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -106,6 +107,7 @@ const CourseLearn = () => {
           .map(p => p.videoId); // videoId field stores both video and text lecture IDs
         setCompletedLessons(new Set(completedContentIds));
       }
+      setProgressLoaded(true);
     } catch (error) {
 
     }
@@ -145,42 +147,117 @@ const CourseLearn = () => {
     return () => window.removeEventListener('videoCompleted', handleVideoCompleted);
   }, []);
 
+  const [hasResumed, setHasResumed] = useState(false);
+
+  useEffect(() => {
+    fetchCourse();
+  }, [id]);
+
+  useEffect(() => {
+    if (course) {
+      loadVideoProgress();
+      loadEnrollmentProgress();
+    }
+  }, [course]);
+
+  // Smart Resume Logic - wait for progress to be loaded before resuming
+  useEffect(() => {
+    if (!course || !course.chapters || hasResumed || loading || !progressLoaded) return;
+
+    // Wait for progress to be potentially loaded (completedLessons can be empty if new user)
+    // We can't strictly wait for "progress loaded" unless we add a specific state, 
+    // but typically progress loads quickly. 
+    // Let's rely on the fact that if completedLessons has items, we use them.
+    // If it's a fresh user, it starts at beginning anyway.
+
+    // Flatten all content, sorted by chapter order then by item order
+    const allContent = [];
+
+    // Sort chapters by order first
+    const sortedChapters = [...(course.chapters || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    sortedChapters.forEach((chapter, chapterIndex) => {
+      // Collect all content items from this chapter
+      const chapterContent = [];
+
+      // Add videos
+      if (chapter.videos) {
+        chapter.videos.forEach(v => chapterContent.push({
+          ...v,
+          contentType: 'video',
+          chapterOrder: chapterIndex,
+          itemOrder: v.order || 0
+        }));
+      }
+
+      // Add text lectures
+      const textLectures = chapter.text_lectures || chapter.textLectures || [];
+      textLectures.forEach(t => chapterContent.push({
+        ...t,
+        contentType: 'text_lecture',
+        chapterOrder: chapterIndex,
+        itemOrder: t.order || 0
+      }));
+
+      // Sort items within chapter by order
+      chapterContent.sort((a, b) => a.itemOrder - b.itemOrder);
+
+      // Add to all content
+      allContent.push(...chapterContent);
+    });
+
+    if (allContent.length === 0) return;
+
+    // Check completion - count only items that are in completedLessons AND are in allContent
+    const completedInCourse = allContent.filter(item => completedLessons.has(item.id)).length;
+    const totalCount = allContent.length;
+
+    // Helper to set the appropriate content type
+    const setContent = (item) => {
+      if (item.contentType === 'video') {
+        setCurrentLesson(item);
+        setCurrentTextLecture(null);
+      } else {
+        setCurrentTextLecture(item);
+        setCurrentLesson(null);
+      }
+    };
+
+    // If course is fully completed, start from the very first item
+    if (completedInCourse > 0 && completedInCourse >= totalCount) {
+      const first = allContent[0];
+      setContent(first);
+      setHasResumed(true);
+      return;
+    }
+
+    // Otherwise, resume from first uncompleted item
+    const firstUncompleted = allContent.find(item => !completedLessons.has(item.id));
+
+    if (firstUncompleted) {
+      setContent(firstUncompleted);
+    } else {
+      // Fallback to first if somehow everything is completed but size didn't match (unlikely) or none found
+      const first = allContent[0];
+      setContent(first);
+    }
+
+    setHasResumed(true);
+  }, [course, completedLessons, loading, progressLoaded]);
+
   const fetchCourse = async () => {
     try {
       const response = await axios.get(`${API_URL}/courses/${id}`);
       const course = response.data.course;
       if (course) {
         setCourse(course);
-        // Set first content as current if chapters exist and no current lesson
-        if (!currentLesson && !currentTextLecture && course.chapters?.[0]) {
-          const firstChapter = course.chapters[0];
-          const allContent = [
-            ...(firstChapter.videos || []).map(v => ({ ...v, contentType: 'video' })),
-            ...(firstChapter.resources || []).map(r => ({ ...r, contentType: 'resource' })),
-            ...((firstChapter.text_lectures || firstChapter.textLectures) || []).map(t => ({ ...t, contentType: 'text_lecture' }))
-          ].sort((a, b) => a.order - b.order);
-
-          const firstContent = allContent[0];
-          if (firstContent) {
-            if (firstContent.contentType === 'video') {
-              setCurrentLesson(firstContent);
-            } else if (firstContent.contentType === 'text_lecture') {
-              setCurrentTextLecture(firstContent);
-            }
-          }
-        }
-        // If current lesson was deleted, find next available video
-        if (currentLesson) {
-          const videoExists = course.chapters?.some(chapter =>
-            chapter.videos?.some(video => video.id === currentLesson.id)
-          );
-          if (!videoExists) {
-            const firstAvailableVideo = course.chapters?.find(chapter => chapter.videos?.length > 0)?.videos?.[0];
-            setCurrentLesson(firstAvailableVideo || null);
-          }
-        }
+        // Note: We removed the immediate default selection here to allow the smart resume effect 
+        // to decide the best starting point without flashing the wrong lesson.
+        // However, if we need a safe default in case progress fails, we can do it, 
+        // but the effect above handles the "allContent[0]" fallback.
       }
     } catch (error) {
+      // Error handling
     } finally {
       setLoading(false);
     }
@@ -429,12 +506,27 @@ const CourseLearn = () => {
 
   const getProgress = () => {
     if (!course?.chapters) return 0;
-    const totalContent = course.chapters.reduce((acc, chapter) => {
-      const videos = chapter.videos?.length || 0;
-      const textLectures = (chapter.text_lectures || chapter.textLectures)?.length || 0;
-      return acc + videos + textLectures;
-    }, 0);
-    return totalContent > 0 ? (completedLessons.size / totalContent) * 100 : 0;
+
+    let totalContent = 0;
+    let completedCount = 0;
+
+    course.chapters.forEach(chapter => {
+      // Count videos
+      const videos = chapter.videos || [];
+      totalContent += videos.length;
+      videos.forEach(video => {
+        if (completedLessons.has(video.id)) completedCount++;
+      });
+
+      // Count text lectures
+      const textLectures = chapter.text_lectures || chapter.textLectures || [];
+      totalContent += textLectures.length;
+      textLectures.forEach(tl => {
+        if (completedLessons.has(tl.id)) completedCount++;
+      });
+    });
+
+    return totalContent > 0 ? (completedCount / totalContent) * 100 : 0;
   };
 
   const loadEnrollmentProgress = async () => {
@@ -723,11 +815,48 @@ const CourseLearn = () => {
               {/* Text Lecture Viewer */}
               <div className="mb-6 aspect-video">
                 {currentTextLecture.uploadType === 'url' ? (
-                  <iframe
-                    src={currentTextLecture.filePath}
-                    className="w-full h-full rounded-lg border theme-border"
-                    title={currentTextLecture.title}
-                  />
+                  (() => {
+                    const isYouTube = currentTextLecture.filePath.match(/(?:youtube\.com|youtu\.be)/);
+                    if (isYouTube) {
+                      const videoIdMatch = currentTextLecture.filePath.match(/(?:v=|embed\/|youtu\.be\/|\/shorts\/)([a-zA-Z0-9_-]{11})/);
+                      const videoId = videoIdMatch ? videoIdMatch[1] : null;
+                      if (videoId) {
+                        return (
+                          <iframe
+                            src={`https://www.youtube.com/embed/${videoId}`}
+                            className="w-full h-full rounded-lg border theme-border"
+                            title={currentTextLecture.title}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        );
+                      } else {
+                        // YouTube link but no video ID (e.g. channel or home page)
+                        return (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg border theme-border">
+                            <div className="text-center p-6">
+                              <p className="theme-text-primary mb-2 font-medium">This YouTube link cannot be embedded directly.</p>
+                              <a
+                                href={currentTextLecture.filePath}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                              >
+                                Open on YouTube
+                              </a>
+                            </div>
+                          </div>
+                        );
+                      }
+                    }
+                    return (
+                      <iframe
+                        src={currentTextLecture.filePath}
+                        className="w-full h-full rounded-lg border theme-border"
+                        title={currentTextLecture.title}
+                      />
+                    );
+                  })()
                 ) : (
                   <iframe
                     src={`${BASE_URL}${currentTextLecture.filePath}`}
