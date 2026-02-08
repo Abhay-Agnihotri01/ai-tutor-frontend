@@ -1034,13 +1034,43 @@ const CourseLearn = () => {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-96">
-              <div className="text-center">
-                <Play className="w-16 h-16 theme-text-muted mx-auto mb-4" />
-                <h3 className="text-xl font-semibold theme-text-primary mb-2">No videos available</h3>
-                <p className="theme-text-secondary">This course doesn't have any videos yet.</p>
-              </div>
-            </div>
+            (() => {
+              const hasAnyContent = course?.chapters?.some(chapter =>
+                (chapter.videos?.length > 0) ||
+                (chapter.text_lectures?.length > 0) ||
+                (chapter.textLectures?.length > 0) ||
+                (chapter.resources?.length > 0)
+              );
+
+              if (hasAnyContent) {
+                return (
+                  <div className="animate-fade-in">
+                    <Skeleton className="aspect-video w-full rounded-lg mb-6" />
+                    <div className="flex justify-between items-center mb-6">
+                      <Skeleton className="h-8 w-64" />
+                      <Skeleton className="h-6 w-24" />
+                    </div>
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex space-x-4">
+                        <Skeleton className="h-10 w-32" />
+                        <Skeleton className="h-10 w-32" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-32 w-full rounded-lg" />
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex items-center justify-center h-96">
+                  <div className="text-center">
+                    <Play className="w-16 h-16 theme-text-muted mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold theme-text-primary mb-2">No videos available</h3>
+                    <p className="theme-text-secondary">This course doesn't have any videos yet.</p>
+                  </div>
+                </div>
+              );
+            })()
           )}
         </div>
 

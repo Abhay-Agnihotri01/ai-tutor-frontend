@@ -170,8 +170,8 @@ const TextLectureNotes = ({ textLectureId, courseId, inline = false, onClose }) 
           <button
             onClick={() => setActiveTab('notes')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center ${activeTab === 'notes'
-                ? 'bg-primary-500 text-white shadow-md'
-                : 'theme-bg-secondary theme-text-secondary hover:theme-bg-tertiary hover:theme-text-primary'
+              ? 'bg-primary-500 text-white shadow-md'
+              : 'theme-bg-secondary theme-text-secondary hover:theme-bg-tertiary hover:theme-text-primary'
               }`}
           >
             <StickyNote className="w-4 h-4 mr-2" />
@@ -180,8 +180,8 @@ const TextLectureNotes = ({ textLectureId, courseId, inline = false, onClose }) 
           <button
             onClick={() => setActiveTab('bookmarks')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center ${activeTab === 'bookmarks'
-                ? 'bg-primary-500 text-white shadow-md'
-                : 'theme-bg-secondary theme-text-secondary hover:theme-bg-tertiary hover:theme-text-primary'
+              ? 'bg-primary-500 text-white shadow-md'
+              : 'theme-bg-secondary theme-text-secondary hover:theme-bg-tertiary hover:theme-text-primary'
               }`}
           >
             <Bookmark className="w-4 h-4 mr-2" />

@@ -5,11 +5,13 @@ import { ShoppingCart, Trash2, Heart, ArrowLeft, CreditCard, Tag, Clock } from '
 import { toast } from 'react-hot-toast';
 import Button from '../components/common/Button';
 import { Skeleton } from '../components/common/Skeleton';
+import CouponInput from '../components/cart/CouponInput';
 
 const Cart = () => {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -340,13 +342,40 @@ const Cart = () => {
                 </div>
 
                 <div className="border-t theme-border pt-4 mb-6">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold theme-text-primary">Total:</span>
-                    <span className="text-2xl font-bold text-green-600">${total.toFixed(2)}</span>
-                  </div>
+                  {appliedCoupon ? (
+                    <>
+                      <div className="flex justify-between items-center text-sm mb-2">
+                        <span className="theme-text-secondary">Subtotal:</span>
+                        <span className="theme-text-primary">${appliedCoupon.originalPrice.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm mb-2 text-green-600">
+                        <span>Discount ({appliedCoupon.code}):</span>
+                        <span>-${appliedCoupon.discountAmount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-semibold theme-text-primary">Total:</span>
+                        <span className="text-2xl font-bold text-green-600">${appliedCoupon.finalPrice.toFixed(2)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold theme-text-primary">Total:</span>
+                      <span className="text-2xl font-bold text-green-600">${total.toFixed(2)}</span>
+                    </div>
+                  )}
                   {total > 50 && (
                     <p className="text-sm text-green-600 mt-2">🎉 You saved on bulk purchase!</p>
                   )}
+                </div>
+
+                {/* Coupon Input */}
+                <div className="mb-6">
+                  <CouponInput
+                    cartTotal={total}
+                    courseId={cart.length === 1 ? cart[0].courses.id : null}
+                    onApply={(couponData) => setAppliedCoupon(couponData)}
+                    onRemove={() => setAppliedCoupon(null)}
+                  />
                 </div>
 
                 <Button

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Moon, Sun, Menu, X, User, LogOut, Search, BookOpen, Play, Award, Bell, ShoppingCart, Heart, ChevronDown, Globe, Briefcase, Code, Palette, Camera, Music, Dumbbell, TrendingUp, Shield, Users, MessageSquare, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Moon, Sun, Menu, X, User, LogOut, Search, BookOpen, Play, Award, Bell, ShoppingCart, Heart, ChevronDown, Globe, Briefcase, Code, Palette, Camera, Music, Dumbbell, TrendingUp, Shield, Users, MessageSquare, AlertTriangle, BarChart3, Trophy, Tag } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../hooks/useCart';
@@ -457,6 +457,14 @@ const Header = () => {
                             </div>
                             <span>Contact Admin</span>
                           </Link>
+                          <Link
+                            to="/instructor/coupons"
+                            className="flex items-center space-x-3 w-full p-3 text-left hover:theme-bg-secondary rounded-lg theme-text-primary transition-colors"
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            <Tag className="w-5 h-5" />
+                            <span>Coupon Manager</span>
+                          </Link>
                         </>
                       ) : (
                         <>
@@ -518,6 +526,14 @@ const Header = () => {
                             <AlertTriangle className="w-5 h-5" />
                             <span>Report Issue</span>
                           </button>
+                          <Link
+                            to="/leaderboard"
+                            className="flex items-center space-x-3 w-full p-3 text-left hover:theme-bg-secondary rounded-lg theme-text-primary transition-colors"
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            <Trophy className="w-5 h-5" />
+                            <span>Leaderboard</span>
+                          </Link>
                         </>
                       )}
 
